@@ -1,4 +1,4 @@
-CLANG = ../llvm-wasm/bin/clang
+LLVM_BIN = ../llvm-wasm/bin
 WABT_BIN = ../wabt/out/clang/Debug
 BINARYEN_BIN = ../binaryen/bin
 
@@ -14,28 +14,16 @@ MALLOC_OPTS = -DMORECORE_CANNOT_TRIM=1 -DHAVE_MMAP=0 -DHAVE_MREMAP=0 -DLACKS_TIM
 # DISTLIBS = ${addsuffix .o, ${addprefix dist/, ${LIBNAMES}}}
 
 dist/memory.wasm: lib/malloc.wasm lib/memcpy.wasm lib/memset.wasm lib/stdlib-base.wasm
-	$(WABT_BIN)/wasm-link lib/malloc.wasm lib/memcpy.wasm lib/memset.wasm lib/stdlib-base.wasm -o dist/memory.wasm -r
+	$(LLVM_BIN)/lld -flavor wasm lib/malloc.wasm lib/memcpy.wasm lib/memset.wasm lib/stdlib-base.wasm -o dist/memory.wasm -r
 
 lib/malloc.wasm:
-	$(CLANG) -S --target=wasm32 -Iinclude/libc -Oz -c src/dlmalloc.c -o lib/malloc.s $(MALLOC_OPTS) $(DISABLE_WARN)
-	$(BINARYEN_BIN)/s2wasm lib/malloc.s --import-memory > lib/malloc.wast
-	rm lib/malloc.s
-	$(BINARYEN_BIN)/wasm-opt -S -Oz lib/malloc.wast -o lib/malloc.wast
-	$(WABT_BIN)/wast2wasm -r lib/malloc.wast -o lib/malloc.wasm
+	$(LLVM_BIN)/clang --target=wasm32-unknown-unknown-wasm -Iinclude/libc -Oz -c src/dlmalloc.c -o lib/malloc.wasm $(MALLOC_OPTS) $(DISABLE_WARN)
 
 lib/memcpy.wasm:
-	$(CLANG) -S --target=wasm32 -Iinclude/libc -Oz -c src/string/memcpy.c -o lib/memcpy.s $(DISABLE_WARN)
-	$(BINARYEN_BIN)/s2wasm lib/memcpy.s --import-memory > lib/memcpy.wast
-	rm lib/memcpy.s
-	$(BINARYEN_BIN)/wasm-opt -S -Oz lib/memcpy.wast -o lib/memcpy.wast
-	$(WABT_BIN)/wast2wasm -r lib/memcpy.wast -o lib/memcpy.wasm
+	$(LLVM_BIN)/clang --target=wasm32-unknown-unknown-wasm -Iinclude/libc -Oz -c src/string/memcpy.c -o lib/memcpy.wasm $(DISABLE_WARN)
 
 lib/memset.wasm:
-	$(CLANG) -S --target=wasm32 -Iinclude/libc -Oz -c src/string/memset.c -o lib/memset.s $(DISABLE_WARN)
-	$(BINARYEN_BIN)/s2wasm lib/memset.s --import-memory > lib/memset.wast
-	rm lib/memset.s
-	$(BINARYEN_BIN)/wasm-opt -S -Oz lib/memset.wast -o lib/memset.wast
-	$(WABT_BIN)/wast2wasm -r lib/memset.wast -o lib/memset.wasm
+	$(LLVM_BIN)/clang --target=wasm32-unknown-unknown-wasm -Iinclude/libc -Oz -c src/string/memset.c -o lib/memset.wasm $(DISABLE_WARN)
 
 lib/stdlib-base.wasm:
 	$(WABT_BIN)/wast2wasm -r src/stdlib-base.wast -o lib/stdlib-base.wasm
